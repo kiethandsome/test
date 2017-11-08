@@ -10,16 +10,16 @@ import UIKit
 import AsyncDisplayKit
 import Hero
 
-protocol SecondCellDelegate: class {
+protocol ImageCellDelegate: class {
     func didTapImageCell(imageLink: String, indexPath: Int)
 }
 
-class SecondCell: ASCellNode, UIGestureRecognizerDelegate {
+class ImageCell: ASCellNode, UIGestureRecognizerDelegate {
     
     var postImageNode = ASNetworkImageNode()
     var imageLink = String()
     var tapGesture = UITapGestureRecognizer()
-    weak var delegate: SecondCellDelegate!
+    weak var delegate: ImageCellDelegate!
     
     init (model:Model) {
         super.init()

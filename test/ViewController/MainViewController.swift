@@ -38,13 +38,13 @@ class MainViewController: ASViewController<ASTableNode>{
         DispatchQueue.main.async {
             self.getDataFormServer()
         }
-        self.isHeroEnabled = true
+        isHeroEnabled = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if let _ = indexPath {
-            node.nodeForRow(at: indexPath!)
+        if let _ = indexPath, let _ = videoPlayerNode {
+            node.reloadRows(at: [indexPath!], with: .none)
         }
     }
     
@@ -108,8 +108,8 @@ extension MainViewController: ASTableDelegate, ASTableDataSource {
                 return videoCell
             } else {
                 let secondCell: ASCellNodeBlock = {
-                    let cell = SecondCell.init(model: model)
-                    cell.delegate = self as SecondCellDelegate
+                    let cell = ImageCell.init(model: model)
+                    cell.delegate = self as ImageCellDelegate
                     DispatchQueue.main.sync {
                         cell.postImageNode.view.heroID = "image_\(indexPath.section)"
                     }
@@ -149,7 +149,7 @@ extension MainViewController: VideoCellDelegate {
         heroVc.videoPlayerNode = video
         heroVc.indexPath = indexPath
         heroVc.delegate = self as? PresentedVideoDelegate
-        present(heroVc, animated: true, completion: nil)
+        show(heroVc, sender: nil)
     }
     
     func didTapVideoCell(currentTime: CGFloat, index: Int, link: String) {
@@ -159,7 +159,7 @@ extension MainViewController: VideoCellDelegate {
 
 // Mark: Image Cell Delegate
 
-extension MainViewController: SecondCellDelegate {
+extension MainViewController: ImageCellDelegate {
     func didTapImageCell(imageLink: String, indexPath: Int) {
         let imageVc = ImageViewController()
         imageVc.imageLink = imageLink

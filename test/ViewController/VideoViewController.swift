@@ -12,8 +12,6 @@ import Hero
 import AVKit
 import AVFoundation
 
-//typealias MyClosure = () -> ()
-
 protocol PresentedVideoDelegate : class {
     func sendBackVideo(video: ASVideoPlayerNode, index: Int)
 }
@@ -46,7 +44,7 @@ class VideoViewController: ASViewController<ASDisplayNode> {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.isHeroEnabled = true
+        isHeroEnabled = true
         seekButton.frame = CGRect(x: 10, y: 10, width: 40, height: 20)
         seekButton.setTitle("Seek", with: UIFont.systemFont(ofSize: 12), with: .white, for: .normal)
         seekButton.addTarget(self, action: #selector(seek), forControlEvents: .allEvents)
@@ -88,13 +86,7 @@ class VideoViewController: ASViewController<ASDisplayNode> {
             
         case .began:
             /// begin the transition as normal
-            dismiss(animated: true, completion: {
-                let appDelegate  = UIApplication.shared.delegate as! AppDelegate
-                let mainVC = appDelegate.window!.rootViewController as! MainViewController
-                mainVC.node.nodeForRow(at: self.indexPath!)
-                mainVC.videoPlayerNode = self.videoPlayerNode
-                mainVC.indexPath = self.indexPath!
-            })
+            hero_dismissViewController()
             
         case .changed:
             /// calculate the progress based on how far the user moved
