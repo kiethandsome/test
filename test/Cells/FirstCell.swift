@@ -72,7 +72,7 @@ class FirstCell: ASCellNode {
         bigWrapperStack.alignContent = .center
         bigWrapperStack.children = [avatar, nameAndPosttimeStack, settingButton]
         
-        return ASInsetLayoutSpec(insets: UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10),
+        return ASInsetLayoutSpec(insets: UIEdgeInsets(top: 0, left: 10, bottom: 10, right: 10),
                                  child: bigWrapperStack)
     }
 }

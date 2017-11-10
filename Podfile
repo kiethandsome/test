@@ -9,9 +9,8 @@ target 'test' do
 pod 'Texture'
 pod 'Alamofire', '~> 4.5'
 pod 'AlamofireSwiftyJSON', '~> 1.0'
-pod 'Hero', '1.0.0-alpha.4'
+pod 'Hero'
 pod 'MBProgressHUD', '~> 1.0'
-pod 'YouTubePlayer', '~> 0.4'
 pod 'SDWebImage', '~> 4.1'
 
 end

@@ -16,7 +16,11 @@ import MBProgressHUD
 
 class MainViewController: ASViewController<ASTableNode>{
     
-    var models = [Model]()
+    var models = [Model]() {
+        didSet {
+            self.node.reloadData()
+        }
+    }
     var videoPlayerNode: ASVideoPlayerNode?
     var indexPath: IndexPath?
     
@@ -30,39 +34,20 @@ class MainViewController: ASViewController<ASTableNode>{
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.node.allowsSelection = false
+        
+        self.navigationController?.isHeroEnabled = true
+        self.navigationController?.heroNavigationAnimationType = .fade
+        self.navigationController?.isNavigationBarHidden = true
+        
         self.node.view.separatorStyle = .none
         self.node.dataSource = self
         self.node.delegate = self
-        self.node.leadingScreensForBatching = 1.0
-        DispatchQueue.main.async {
-            self.getDataFormServer()
-        }
-        isHeroEnabled = true
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        if let _ = indexPath, let _ = videoPlayerNode {
-            node.reloadRows(at: [indexPath!], with: .none)
-        }
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        self.node.view.contentInset.top = 20
-    }
-    
-    /// mark: Read json file.
-    
-    func readFile() {
-        let file = Bundle.main.path(forResource: "generated", ofType: "json")
-        let data = try? Data(contentsOf: URL(fileURLWithPath: file!))
-        let jsonData = try? JSONSerialization.jsonObject(with: data!, options: [])
-        if (jsonData as? [[String:String]]) != nil {
-            print(jsonData!)
-        }
-        print(jsonData!)
+        
+        self.getDataFormServer(completion: { (models) in
+            if let models = models {
+                self.models = models
+            }
+        })
     }
 }
 
@@ -76,18 +61,39 @@ extension MainViewController: ASTableDelegate, ASTableDataSource {
         return 4
     }
     
-    func tableNode(_ tableNode: ASTableNode, nodeBlockForRowAt indexPath: IndexPath) -> ASCellNodeBlock {
+    func tableNode(_ tableNode: ASTableNode, didSelectRowAt indexPath: IndexPath) {
+        let cell = tableNode.nodeForRow(at: indexPath) as? ImageCell
         
+        switch indexPath.row {
+        case 0:
+            break
+        case 1:
+            if indexPath.section % 2 == 0 {
+                //
+            } else {
+                let imageVc = ImageViewController()
+                imageVc.image = cell?.postImageNode.image
+                imageVc.indexPath = indexPath.section
+                self.navigationController?.pushViewController(imageVc, animated: true)
+            }
+        case 2:
+            break
+        case 3:
+            break
+        default:
+            break
+        }
+    }
+    
+    func tableNode(_ tableNode: ASTableNode, nodeBlockForRowAt indexPath: IndexPath) -> ASCellNodeBlock {
         let model = models[indexPath.section]
         
         switch indexPath.row {
-            
         case 0:
             let firstCell: ASCellNodeBlock = {
                 return FirstCell.init(withModel: model)
             }
             return firstCell
-            
         case 1:
             if indexPath.section % 2 == 0 {
                 let videoCell: ASCellNodeBlock = {
@@ -109,27 +115,27 @@ extension MainViewController: ASTableDelegate, ASTableDataSource {
             } else {
                 let secondCell: ASCellNodeBlock = {
                     let cell = ImageCell.init(model: model)
-                    cell.delegate = self as ImageCellDelegate
+                    cell.selectionStyle = .none
                     DispatchQueue.main.sync {
                         cell.postImageNode.view.heroID = "image_\(indexPath.section)"
+                        cell.view.heroModifiers = [.fade]
+                        cell.postImageNode.view.heroModifiers = [.arc]
+                        cell.postImageNode.view.isOpaque = true
                     }
                     return cell
                 }
                 return secondCell
             }
-
         case 2:
             let tittleCell: ASCellNodeBlock = {
                 return TittleCell.init(model: model)
             }
             return tittleCell
-            
         case 3:
             let finalCell: ASCellNodeBlock = {
                 return ThirdCell.init(model: model)
             }
             return finalCell
-            
         default:
             let nodeBlock : ASCellNodeBlock = {
                 return ASCellNode()
@@ -140,9 +146,7 @@ extension MainViewController: ASTableDelegate, ASTableDataSource {
 }
 
 // Mark: Video Cell Delegate
-
 extension MainViewController: VideoCellDelegate {
-    
     func didTapVideo(video: ASVideoPlayerNode, index: Int?, indexPath: IndexPath) {
         let heroVc = VideoViewController()
         heroVc.index = index
@@ -157,47 +161,42 @@ extension MainViewController: VideoCellDelegate {
     }
 }
 
-// Mark: Image Cell Delegate
-
-extension MainViewController: ImageCellDelegate {
-    func didTapImageCell(imageLink: String, indexPath: Int) {
-        let imageVc = ImageViewController()
-        imageVc.imageLink = imageLink
-        imageVc.indexPath = indexPath
-        self.present(imageVc, animated: true, completion: nil)
-    }
-}
-
 extension MainViewController {
-    
-    func getDataFormServer() {
+    func getDataFormServer(completion: @escaping ([Model]?) -> Void) {
         let URL = "http://www.json-generator.com/api/json/get/cpIYkghIEi?indent=2"
         MBProgressHUD.showAdded(to: node.view, animated: true)
         Alamofire.request(URL, method: .get).responseSwiftyJSON { response in
             MBProgressHUD.hide(for: self.node.view, animated: true)
-            print("###Success: \(response.result.isSuccess)")
-            
-            ///now response.result.value is SwiftyJSON.JSON type
-            ///print("Value:\(response.result.value!)")
             
             if (response.result.isSuccess == false || (response.error != nil)) {
                 print("Fail to request!")
                 let alert = UIAlertController(title: "Lỗi!", message: "Ko thể thực hiện request lên server. Thoát?", preferredStyle: .actionSheet)
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { (self) in
-                    /// UIControl().sendAction(#selector(URLSessionTask.suspend), to: UIApplication.shared, for: nil)
-                    exit(0)
-                }))
-                self .present(alert, animated: true, completion: nil)
+                alert.addAction(UIAlertAction.init(title: "OK", style: .cancel, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+                completion(nil)
             } else {
-                for jsonDict in (response.result.value?.arrayValue)! {
+                var models = [Model]()
+                response.value?.arrayValue.forEach({ (json) in
                     let newModel = Model()
-                    newModel.initWithData(data: jsonDict.dictionaryObject!)
+                    newModel.initWithData(data: json.dictionaryObject!)
                     print("\n my video link: \(newModel.videoLink!)")
-                    self.models.append(newModel)
-                }
+                    models.append(newModel)
+                })
+                completion(models)
             }
-            self.node.reloadData()
         }
+    }
+}
+
+extension MainViewController: HeroViewControllerDelegate {
+    func heroWillStartAnimatingTo(viewController: UIViewController) {
+        if viewController is ImageViewController {
+        } else {
+            self.node.view.heroModifiers = [.cascade]
+        }
+    }
+    func heroWillStartAnimatingFrom(viewController: UIViewController) {
+        self.node.view.heroModifiers = [.cascade]
     }
 }
 

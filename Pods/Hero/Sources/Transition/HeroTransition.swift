@@ -50,7 +50,14 @@ open class HeroTransition: NSObject {
   public var isUserInteractionEnabled = false
   public var viewOrderingStrategy: HeroViewOrderingStrategy = .auto
 
-  public internal(set) var state: HeroTransitionState = .possible
+  public internal(set) var state: HeroTransitionState = .possible {
+    didSet {
+      if state != .notified, state != .starting {
+        beginCallback?(state == .animating)
+        beginCallback = nil
+      }
+    }
+  }
 
   public var isTransitioning: Bool { return state != .possible }
   public internal(set) var isPresenting: Bool = true
@@ -72,6 +79,7 @@ open class HeroTransition: NSObject {
   internal var transitionContainer: UIView?
 
   internal var completionCallback: ((Bool) -> Void)?
+  internal var beginCallback: ((Bool) -> Void)?
 
   internal var processors: [HeroPreprocessor] = []
   internal var animators: [HeroAnimator] = []
@@ -139,7 +147,7 @@ open class HeroTransition: NSObject {
   // Used when doing a hero_replaceViewController within a UINavigationController, to fix a bug with
   // UINavigationController.setViewControllers not able to handle interactive transition
   internal var forceNotInteractive = false
-  internal var forceFinishing: Bool? = nil
+  internal var forceFinishing: Bool?
 
   internal var inNavigationController = false
   internal var inTabBarController = false
@@ -164,7 +172,13 @@ open class HeroTransition: NSObject {
       complete(finished: finishing)
       return
     }
-    progressRunner.start(currentProgress: progress, totalTime: totalDuration, reverse: !finishing)
+    let totalTime: TimeInterval
+    if finishing {
+      totalTime = after / max((1 - progress), 0.01)
+    } else {
+      totalTime = after / max(progress, 0.01)
+    }
+    progressRunner.start(timePassed: progress * totalTime, totalTime: totalTime, reverse: !finishing)
   }
 
   // MARK: Observe Progress
